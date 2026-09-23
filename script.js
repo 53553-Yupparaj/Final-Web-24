@@ -1,13 +1,13 @@
 // 1. Supabase credentials configuration
 const { createClient } = supabase;
-const SUPABASE_URL = "https://your-project.supabase.co"; // Replace with your URL
-const SUPABASE_KEY = "your-publishable-key";             // Replace with your Publishable Key
+const SUPABASE_URL = "https://aworywayyxstysdaiqlx.supabase.co"; 
+const SUPABASE_KEY = "sb_publishable_QqFOGSypuY7yIbON6oAGvQ_SJfZ-rdi";
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 2. Fetch tasks from Supabase (Read)
 async function fetchTasks() {
   const searchKeyword = document.getElementById("searchInput").value.trim();
-  let query = db.from("tasks").select("*").order("created_at", { ascending: false });
+  let query = db.from("tasks").select("*").order("id", { ascending: false });
 
   if (searchKeyword) {
     query = query.ilike("title", `%${searchKeyword}%`);
@@ -28,7 +28,7 @@ function renderTable(tasks) {
   const tbody = document.getElementById("taskTableBody");
   tbody.innerHTML = "";
 
-  if (tasks.length === 0) {
+  if (!tasks || tasks.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No tasks found</td></tr>';
     return;
   }
@@ -69,14 +69,14 @@ async function addTask(event) {
   const { error } = await db.from("tasks").insert([
     { 
       title: title, 
-      due_date: dueDate, 
+      due_date: dueDate || null, 
       is_done: false 
     }
   ]);
 
   if (error) {
-    alert("Error adding task!");
-    console.error(error);
+    alert("Supabase Error: " + error.message + (error.hint ? "\nHint: " + error.hint : ""));
+    console.error("Insert error:", error);
   } else {
     document.getElementById("addForm").reset();
     fetchTasks();
@@ -91,6 +91,7 @@ async function toggleTaskStatus(id, newStatus) {
     .eq("id", id);
 
   if (error) {
+    alert("Update Error: " + error.message);
     console.error("Update error:", error);
   } else {
     fetchTasks();
@@ -104,6 +105,7 @@ async function deleteTask(id) {
   const { error } = await db.from("tasks").delete().eq("id", id);
 
   if (error) {
+    alert("Delete Error: " + error.message);
     console.error("Delete error:", error);
   } else {
     fetchTasks();
