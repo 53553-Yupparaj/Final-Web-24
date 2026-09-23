@@ -3,59 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจัดการรายการ (Tasks)</title>
-  <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
-    body { background-color: #f4f7fe; padding: 20px; color: #333; }
-    .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
-    h1 { color: #1e3a8a; font-size: 22px; }
-
-    .form-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    input[type="text"], input[type="date"] { padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-    input[type="text"] { flex: 1; min-width: 200px; }
-
-    .btn { padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; }
-    .btn-add { background-color: #16a34a; color: white; }
-    .btn-add:hover { background-color: #15803d; }
-    .btn-toggle { background-color: #2563eb; color: white; padding: 6px 12px; font-size: 12px; }
-    .btn-delete { background-color: #dc2626; color: white; padding: 6px 12px; font-size: 12px; margin-left: 4px; }
-
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th, td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-    th { background-color: #f8fafc; color: #64748b; font-weight: 600; }
-
-    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
-    .status-done { background-color: #dcfce7; color: #15803d; }
-    .status-pending { background-color: #fef3c7; color: #d97706; }
-    .title-done { text-decoration: line-through; color: #888; }
-  </style>
+  <title>ระบบยืม-คืนหนังสือ</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <div class="container">
     <header>
-      <h1>📋 ระบบจัดการ Tasks</h1>
+      <h1>📚 ระบบยืม-คืนหนังสือ</h1>
     </header>
 
+    <!-- ฟอร์มบันทึกการยืมหนังสือ -->
     <form id="addForm" class="form-group" onsubmit="addTask(event)">
-      <input type="text" id="newTitle" placeholder="ชื่อรายการ (title)..." required>
+      <input type="text" id="newTitle" placeholder="ชื่อหนังสือที่ต้องการยืม..." required>
       <input type="date" id="newDueDate" required>
-      <button type="submit" class="btn btn-add">+ เพิ่มรายการ</button>
+      <button type="submit" class="btn btn-add">+ บันทึกการยืม</button>
     </form>
 
+    <!-- ช่องค้นหาหนังสือ -->
     <div class="form-group">
-      <input type="text" id="searchInput" placeholder="ค้นหารายการ..." oninput="fetchTasks()">
+      <input type="text" id="searchInput" placeholder="ค้นหาชื่อหนังสือ..." oninput="fetchTasks()">
     </div>
 
+    <!-- ตารางแสดงรายการยืม-คืน -->
     <table>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>รายการ (title)</th>
-          <th>วันครบกำหนด (due_date)</th>
-          <th>สถานะ (is_done)</th>
+          <th>รหัส (ID)</th>
+          <th>ชื่อหนังสือ</th>
+          <th>กำหนดคืน</th>
+          <th>สถานะ</th>
           <th>จัดการ</th>
         </tr>
       </thead>
@@ -65,118 +42,8 @@
     </table>
   </div>
 
+  <!-- Supabase JS Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <script>
-    const { createClient } = supabase;
-    const SUPABASE_URL = "https://aworywayyxstysdaiqlx.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_QqFOGSypuY7yIbON6oAGvQ_SJfZ-rdi";
-    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    async function fetchTasks() {
-      const searchKeyword = document.getElementById("searchInput").value.trim();
-      let query = db.from("tasks").select("*").order("id", { ascending: false });
-
-      if (searchKeyword) {
-        query = query.ilike("title", `%${searchKeyword}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Fetch error:", error);
-        return;
-      }
-
-      renderTable(data);
-    }
-
-    function renderTable(tasks) {
-      const tbody = document.getElementById("taskTableBody");
-      tbody.innerHTML = "";
-
-      if (!tasks || tasks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">ไม่พบข้อมูล</td></tr>';
-        return;
-      }
-
-      tasks.forEach(task => {
-        const isDone = task.is_done;
-        const statusBadge = isDone 
-          ? '<span class="badge status-done">เสร็จสิ้น</span>' 
-          : '<span class="badge status-pending">รอดำเนินการ</span>';
-        
-        const titleStyle = isDone ? 'class="title-done"' : '';
-        const dueDate = task.due_date ? task.due_date : '-';
-
-        const row = `
-          <tr>
-            <td>${task.id}</td>
-            <td ${titleStyle}><strong>${task.title}</strong></td>
-            <td>${dueDate}</td>
-            <td>${statusBadge}</td>
-            <td>
-              <button class="btn btn-toggle" onclick="toggleTaskStatus(${task.id}, ${!isDone})">
-                ${isDone ? 'ทำอีกครั้ง' : 'เสร็จสิ้น'}
-              </button>
-              <button class="btn btn-delete" onclick="deleteTask(${task.id})">ลบ</button>
-            </td>
-          </tr>
-        `;
-        tbody.innerHTML += row;
-      });
-    }
-
-    async function addTask(event) {
-      event.preventDefault();
-      const title = document.getElementById("newTitle").value;
-      const dueDate = document.getElementById("newDueDate").value;
-
-      const { error } = await db.from("tasks").insert([
-        { 
-          title: title, 
-          due_date: dueDate || null, 
-          is_done: false 
-        }
-      ]);
-
-      if (error) {
-        alert("Supabase Error: " + error.message + (error.hint ? "\nHint: " + error.hint : ""));
-        console.error(error);
-      } else {
-        document.getElementById("addForm").reset();
-        fetchTasks();
-      }
-    }
-
-    async function toggleTaskStatus(id, newStatus) {
-      const { error } = await db
-        .from("tasks")
-        .update({ is_done: newStatus })
-        .eq("id", id);
-
-      if (error) {
-        alert("Update Error: " + error.message);
-        console.error("Update error:", error);
-      } else {
-        fetchTasks();
-      }
-    }
-
-    async function deleteTask(id) {
-      if (!confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) return;
-
-      const { error } = await db.from("tasks").delete().eq("id", id);
-
-      if (error) {
-        alert("Delete Error: " + error.message);
-        console.error("Delete error:", error);
-      } else {
-        fetchTasks();
-      }
-    }
-
-    fetchTasks();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
